@@ -172,6 +172,7 @@ pip-log.txt
 *.map
 *.sym
 *.d
+*.o
 
 #version file (updated every time the program builds)
 version.c
