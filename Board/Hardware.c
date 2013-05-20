@@ -76,6 +76,19 @@ void HardwareInit( void )
 	TIMSK0 = 0x02;
 	OCR0A = HARDWARE_TIMER_0_TOP_VALUE;
 	
+	
+	//Setup timer 1 for switch debouncing
+	//CTC Mode
+	//Clock is Fcpu/64
+	//OCR0A interrupt ~every 250ms
+	TCCR1A = 0x00;
+	TCCR1B = 0x08;
+	TCNT1H = 0x00;		//clear the timer
+	TCNT1L = 0x00;
+	TIMSK1 = 0x02;
+	OCR1AH = 0x7A;
+	OCR1AL = 0x12;
+	
 	//Enable interrupts globally
 	sei();
 	
@@ -114,6 +127,8 @@ void HardwareInit( void )
 	
 	//Initalize the data logger
 	//Datalogger_Init(DATALOGGER_INIT_APPEND | DATALOGGER_INIT_RESTART_IF_FULL);
+	
+	EnableButtons();
 	
 	return;
 }
@@ -159,6 +174,39 @@ void DelayMS(uint16_t ms)
 	}
 	return;
 }
+
+void EnableButtons(void)
+{
+	DDRC &= 0xFB;		//PC2 is set as input
+	PORTC |= 0x04;		//Enable pullup on PC2
+	
+	DDRD &= 0xCC;		//PD0, PD1, PD4, and PD5 are set as input
+	PORTD |= 0x33;		//Enable pullups on PD0, PD1, PD4, and PD5
+	
+	EICRA = 0x0A;		//INT0 and INT1 trigger on falling edge
+	EICRB = 0x08;		//INT5 trigger on falling edge
+	
+	EIFR = 0xFF;		//Clear all interrupts
+	EIMSK = 0x23;		//Enable INT0, INT1, INT5
+	
+	PCMSK1 = 0x18;		//Unmask PCINT11 and PCINT12
+	PCIFR = 0x03;		//Clear pin change interrupts
+	PCICR = 0x02;		//Enable PCINT1
+	
+	return;
+}
+
+void DisableButtons(void)
+{
+	EIMSK = 0x00;		//Disable interrupts
+	PCICR = 0x00;		//Disable pin change interrupts
+	
+	EIFR = 0xFF;		//Clear all interrupts
+	PCIFR = 0x03;		//Clear pin change interrupts
+	return;
+}
+
+
 
 void GetTime( TimeAndDate *TimeToReturn )
 {
@@ -318,102 +366,6 @@ void StopTimer(void)
 	return;
 }
 
-uint8_t GetDataSet(uint8_t DataSet[])
-{
-	uint16_t LS_Data[4];
-	TimeAndDate CurrentTime;
-	int16_t Pressure_kPa;
-	int16_t TemperatureData;
-	int16_t RHData;
-	uint8_t stat;
-	
-	GetTime(&CurrentTime);
-	//printf_P(PSTR("%02u Days %02u:%02u:%02u\n"), CurrentTime.day, CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
-	/*
-	//Read temperature
-	stat = SHT25_ReadTemp(&TemperatureData);
-	if(stat == SHT25_RETURN_STATUS_OK)
-	{
-		//printf_P(PSTR("Temp %d.%02u C\n"), TemperatureData/100, TemperatureData%100);
-	}
-	else if(stat == SHT25_RETURN_STATUS_CRC_ERROR)
-	{
-		//printf_P(PSTR("CRC Error\n"));
-		return 1;
-	}
-	else
-	{
-		//printf_P(PSTR("Timeout\n"));
-		return 2;
-	}
-	
-	//Read RH
-	stat = SHT25_ReadRH(&RHData);
-	if(stat == SHT25_RETURN_STATUS_OK)
-	{
-		//printf_P(PSTR("RH: %u.%02u%%\n"), RHData/100, RHData%100);
-	}
-	else if(stat == SHT25_RETURN_STATUS_CRC_ERROR)
-	{
-		//printf_P(PSTR("CRC Error\n"));
-		return 1;
-	}
-	else
-	{
-		//printf_P(PSTR("Timeout\n"));
-		return 2;
-	}
-	
-	//Current barometric pressure
-	//TODO: add check for pressure...
-	MPL115A1_GetPressure(&Pressure_kPa);
-	//printf_P(PSTR("Pressure: %u.%u kPa\n"), ((int16_t)Pressure_kPa)>>4, ((((int16_t)Pressure_kPa)&0x000F)*1000)/(16) );
-	
-	if(tcs3414_GetData(&LS_Data[0], &LS_Data[1], &LS_Data[2], &LS_Data[3]) != 0)
-	{
-		return 1;
-		//printf_P(PSTR("red:	0x%04X\n"), LS_Data[0]);
-		//printf_P(PSTR("green:	0x%04X\n"), LS_Data[1]);
-		//printf_P(PSTR("blue:	0x%04X\n"), LS_Data[2]);
-		//printf_P(PSTR("clear:	0x%04X\n"), LS_Data[3]);
-	}
-	//else
-	//{
-	//	return 1;
-	//}
-	
-	//Time data
-	DataSet[0] = CurrentTime.month;
-	DataSet[1] = CurrentTime.day;
-	DataSet[2] = CurrentTime.hour;
-	DataSet[3] = CurrentTime.min;
-	
-	//Temperature
-	DataSet[4] = (uint8_t)((TemperatureData & 0xFF00) >> 8);
-	DataSet[5] = (uint8_t)(TemperatureData & 0xFF);
-	
-	//Humidity
-	DataSet[6] = (uint8_t)((RHData & 0xFF00) >> 8);
-	DataSet[7] = (uint8_t)(RHData & 0xFF);
-	
-	//Pressure
-	DataSet[8] = (uint8_t)((Pressure_kPa & 0xFF00) >> 8);
-	DataSet[9] = (uint8_t)(Pressure_kPa & 0xFF);
-	
-	//Color
-	DataSet[10] = (uint8_t)(((LS_Data[0]) & 0xFF00) >> 8);
-	DataSet[11] = (uint8_t)((LS_Data[0]) & 0xFF);
-	DataSet[12] = (uint8_t)(((LS_Data[1]) & 0xFF00) >> 8);
-	DataSet[13] = (uint8_t)((LS_Data[1]) & 0xFF);
-	DataSet[14] = (uint8_t)(((LS_Data[2]) & 0xFF00) >> 8);
-	DataSet[15] = (uint8_t)((LS_Data[2]) & 0xFF);
-	DataSet[16] = (uint8_t)(((LS_Data[3]) & 0xFF00) >> 8);
-	DataSet[17] = (uint8_t)((LS_Data[3]) & 0xFF);
-*/
-	return 0;
-}
-
-
 uint8_t DaysPerMonth(uint8_t MonthNumber)
 {
 	if((MonthNumber > 12) || (MonthNumber < 1))
@@ -459,6 +411,56 @@ uint8_t IsLeapYear(uint16_t TheYear)
 	//Year is not divisible by 4. The year is not a leap year.
 	return 0;
 }
+
+
+
+
+ISR(INT0_vect)
+{
+	DisableButtons();
+	printf_P(PSTR("Left\n"));
+	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
+}
+
+ISR(INT1_vect)
+{
+	DisableButtons();
+	printf_P(PSTR("Up\n"));
+	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
+}
+
+ISR(INT5_vect)
+{
+	DisableButtons();
+	printf_P(PSTR("Center\n"));
+	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
+}
+
+ISR(PCINT1_vect)
+{
+	if((PINC & 0x04) == 0x00)
+	{
+		DisableButtons();
+		printf_P(PSTR("Down\n"));
+		TCCR1B |= 0x03;		//Enable timer 1 for debouncing
+	}
+	else if((PIND & 0x20) == 0x00)
+	{
+		DisableButtons();
+		printf_P(PSTR("Right\n"));
+		TCCR1B |= 0x03;		//Enable timer 1 for debouncing
+	}
+}
+
+//Timer 1 is used for debouncing
+//This timer is started when a button is pressed
+//This interrupt will trigger 250ms later, and re-enable the buttons
+ISR(TIMER1_COMPA_vect)
+{
+	TCCR1B &= 0xF8;		//Disable timer 1
+	EnableButtons();
+}
+
 
 //Timer interrupt 0 for basic timing stuff
 ISR(TIMER0_COMPA_vect)

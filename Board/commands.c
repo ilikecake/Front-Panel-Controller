@@ -46,9 +46,9 @@ const char _F2_HELPTEXT[] PROGMEM 		= "'dfu' has no parameters";
 
 //Read a register
 static int _F3_Handler (void);
-const char _F3_NAME[] PROGMEM 			= "regread";
-const char _F3_DESCRIPTION[] PROGMEM 	= "Read a register from the TCS3414FN";
-const char _F3_HELPTEXT[] PROGMEM 		= "regread <register #>";
+const char _F3_NAME[] PROGMEM 			= "button";
+const char _F3_DESCRIPTION[] PROGMEM 	= "Enable/disable the buttons";
+const char _F3_HELPTEXT[] PROGMEM 		= "button <state>";
 
 //Set time on the internal timer
 static int _F4_Handler (void);
@@ -103,7 +103,7 @@ const CommandListItem AppCommandList[] PROGMEM =
 {
 	{ _F1_NAME,		1,  1,	_F1_Handler,	_F1_DESCRIPTION,	_F1_HELPTEXT	},		//led
 	{ _F2_NAME, 	0,  0,	_F2_Handler,	_F2_DESCRIPTION,	_F2_HELPTEXT	},		//dfu
-	{ _F3_NAME, 	1,  1,	_F3_Handler,	_F3_DESCRIPTION,	_F3_HELPTEXT	},		//regread
+	{ _F3_NAME, 	1,  1,	_F3_Handler,	_F3_DESCRIPTION,	_F3_HELPTEXT	},		//button
 	{ _F4_NAME, 	7,  7,	_F4_Handler,	_F4_DESCRIPTION,	_F4_HELPTEXT	},		//settime
 	{ _F5_NAME, 	0,  0,	_F5_Handler,	_F5_DESCRIPTION,	_F5_HELPTEXT	},		//gettime
 	{ _F6_NAME, 	2,  2,	_F6_Handler,	_F6_DESCRIPTION,	_F6_HELPTEXT	},		//writereg	
@@ -142,21 +142,17 @@ static int _F2_Handler (void)
 //Read a register
 static int _F3_Handler (void)
 {
-	uint8_t DataToReceive = 0;
-	uint8_t DataToSend = argAsInt(1);
-	uint8_t stat;
+	uint8_t NewButtonState;
 	
-	/*stat = tcs3414_ReadReg(DataToSend, &DataToReceive);
-	
-	if(stat == 0)
+	NewButtonState = argAsInt(1);
+	if(NewButtonState == 1)
 	{
-		printf_P(PSTR("reg[0x%02X]: 0x%02X\n"), DataToSend, DataToReceive);
+		EnableButtons();
 	}
-	else
+	else if(NewButtonState == 0)
 	{
-		printf_P(PSTR("Error: 0x%02X\n"), stat);
-	}*/
-	
+		DisableButtons();
+	}
 	return 0;
 }
 
@@ -172,7 +168,7 @@ static int _F4_Handler (void)
 	CurrentTime.hour	= argAsInt(5);
 	CurrentTime.min		= argAsInt(6);
 	CurrentTime.sec		= argAsInt(7);
-	//SetTime(CurrentTime);
+	SetTime(CurrentTime);
 	printf_P(PSTR("Setting %02u/%02u/%04u %02u:%02u:%02u"), CurrentTime.month, CurrentTime.day, CurrentTime.year, CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
 	
 	printf_P(PSTR("......Done\n"));
@@ -184,7 +180,7 @@ static int _F5_Handler (void)
 {
 	TimeAndDate CurrentTime;
 	
-	//GetTime(&CurrentTime);
+	GetTime(&CurrentTime);
 	
 	printf_P(PSTR("%02u/%02u/%04u %02u:%02u:%02u\n"), CurrentTime.month, CurrentTime.day, CurrentTime.year, CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
 	//printf_P(PSTR("%02u Days %02u:%02u:%02u\n"), CurrentTime.day, CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
