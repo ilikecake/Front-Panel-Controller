@@ -37,9 +37,6 @@ volatile uint8_t TimerRunning;
 TimeAndDate TheTime;
 volatile uint16_t ElapsedMS;
 
-
-
-
 void HardwareInit( void )
 {
 	//Initalize variables
@@ -113,20 +110,14 @@ void HardwareInit( void )
 	//	7:	HwB Button		(Input, high-Z)
 	//DDRD	= (1<<2);
 	//PORTD	= 0x00;
-	
-	//Enable USB and interrupts
-	//InitSPIMaster(0,0);
-	//I2CSoft_Init();
+
 	USB_Init();
 	
-	//Initalize peripherals
-	//tcs3414_Init();
-	//MPL115A1_Init();
-	//AT45DB321D_Init();
-	//SHT25_Init();
+	//Initalize LCD
+	lcd_init(LCD_DISP_ON);
 	
-	//Initalize the data logger
-	//Datalogger_Init(DATALOGGER_INIT_APPEND | DATALOGGER_INIT_RESTART_IF_FULL);
+	//clear display and home cursor
+	lcd_clrscr();
 	
 	EnableButtons();
 	

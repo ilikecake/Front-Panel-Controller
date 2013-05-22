@@ -55,6 +55,7 @@
 		#include "common_types.h"
 		#include "commands.h"
 		#include "dfu_jump.h"
+		#include "lcd.h"
 		
 		//Board includes
 		#include "Board/Hardware.h"

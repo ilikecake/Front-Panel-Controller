@@ -80,6 +80,9 @@ uint8_t DataRecoderActive;
 int main(void)
 {
 	HardwareInit();
+	
+	/* put string to display (line 1) with linefeed */
+	lcd_puts("Initalized\n");
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);

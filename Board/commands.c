@@ -34,9 +34,9 @@ const uint8_t NumCommands = 11;
 
 //LED control function
 static int _F1_Handler (void);
-const char _F1_NAME[] PROGMEM 			= "led";
-const char _F1_DESCRIPTION[] PROGMEM 	= "Turn LED on or off";
-const char _F1_HELPTEXT[] PROGMEM 		= "led <number>";
+const char _F1_NAME[] PROGMEM 			= "lcdclr";
+const char _F1_DESCRIPTION[] PROGMEM 	= "clear the LCD";
+const char _F1_HELPTEXT[] PROGMEM 		= "'lcdclr' has no parameters";
 
 //Jump to DFU bootloader
 static int _F2_Handler (void);
@@ -64,9 +64,9 @@ const char _F5_HELPTEXT[] PROGMEM 		= "'gettime' has not parameters";
 
 //Write a register
 static int _F6_Handler (void);
-const char _F6_NAME[] PROGMEM 			= "regwrite";
-const char _F6_DESCRIPTION[] PROGMEM 	= "write to a register";
-const char _F6_HELPTEXT[] PROGMEM 		= "regwrite <register> <data>";
+const char _F6_NAME[] PROGMEM 			= "lcdwrite";
+const char _F6_DESCRIPTION[] PROGMEM 	= "write to the lcd";
+const char _F6_HELPTEXT[] PROGMEM 		= "lcdwrite <data>";
 
 //Get a set of data from the devices
 static int _F8_Handler (void);
@@ -101,12 +101,12 @@ const char _F12_HELPTEXT[] PROGMEM 		= "'twiscan' has no parameters";
 //Command list
 const CommandListItem AppCommandList[] PROGMEM =
 {
-	{ _F1_NAME,		1,  1,	_F1_Handler,	_F1_DESCRIPTION,	_F1_HELPTEXT	},		//led
+	{ _F1_NAME,		0,  0,	_F1_Handler,	_F1_DESCRIPTION,	_F1_HELPTEXT	},		//lcdclr
 	{ _F2_NAME, 	0,  0,	_F2_Handler,	_F2_DESCRIPTION,	_F2_HELPTEXT	},		//dfu
 	{ _F3_NAME, 	1,  1,	_F3_Handler,	_F3_DESCRIPTION,	_F3_HELPTEXT	},		//button
 	{ _F4_NAME, 	7,  7,	_F4_Handler,	_F4_DESCRIPTION,	_F4_HELPTEXT	},		//settime
 	{ _F5_NAME, 	0,  0,	_F5_Handler,	_F5_DESCRIPTION,	_F5_HELPTEXT	},		//gettime
-	{ _F6_NAME, 	2,  2,	_F6_Handler,	_F6_DESCRIPTION,	_F6_HELPTEXT	},		//writereg	
+	{ _F6_NAME, 	1,  1,	_F6_Handler,	_F6_DESCRIPTION,	_F6_HELPTEXT	},		//lcdwrite	
 	{ _F8_NAME,		0,  0,	_F8_Handler,	_F8_DESCRIPTION,	_F8_HELPTEXT	},		//data
 	{ _F9_NAME,		1,  3,	_F9_Handler,	_F9_DESCRIPTION,	_F9_HELPTEXT	},		//memread
 	{ _F10_NAME,	0,  0,	_F10_Handler,	_F10_DESCRIPTION,	_F10_HELPTEXT	},		//pres
@@ -116,10 +116,10 @@ const CommandListItem AppCommandList[] PROGMEM =
 
 //Command functions
 
-//LED control function
+//Clear LCD screen
 static int _F1_Handler (void)
 {
-	//LED((uint8_t)argAsInt(1));
+	lcd_clrscr();
 	return 0;
 }
 
@@ -139,7 +139,7 @@ static int _F2_Handler (void)
 	return 0;
 }
 
-//Read a register
+//Enable or disable the buttons
 static int _F3_Handler (void)
 {
 	uint8_t NewButtonState;
@@ -191,9 +191,11 @@ static int _F5_Handler (void)
 //Write a register
 static int _F6_Handler (void)
 {
-	uint8_t RegToWrite = argAsInt(1);
-	uint32_t DataToWrite = argAsInt(2);
-
+	char DataToWrite[16];
+	argAsChar(1, DataToWrite);
+	
+	lcd_puts(DataToWrite);
+	lcd_puts("\n");
 	/*if(tcs3414_WriteReg(RegToWrite, DataToWrite) == 0)
 	{
 		printf_P(PSTR("OK\n"));
