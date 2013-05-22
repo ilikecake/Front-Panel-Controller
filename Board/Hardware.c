@@ -27,6 +27,8 @@
 
 #define HARDWARE_TIMER_0_TOP_VALUE	124
 
+#define BUTTON_DELAY_COUNT	2
+
 //Global variables needed for the timer
 TimeAndDate TimerStartTime;
 volatile uint16_t TimerStartMS;
@@ -36,6 +38,8 @@ volatile uint8_t TimerRunning;
 //Global variables needed for the RTC
 TimeAndDate TheTime;
 volatile uint16_t ElapsedMS;
+
+volatile uint8_t ButtonInputTimeoutCount;
 
 void HardwareInit( void )
 {
@@ -49,6 +53,8 @@ void HardwareInit( void )
 	TheTime.month	= 0;
 	TheTime.year	= 0;
 	TimerRunning = 0;
+	
+	ButtonInputTimeoutCount = 0;
 	
 	//Disable watchdog if enabled by bootloader/fuses
 	MCUSR &= ~(1 << WDRF);
@@ -75,16 +81,16 @@ void HardwareInit( void )
 	
 	
 	//Setup timer 1 for switch debouncing
-	//CTC Mode
-	//Clock is Fcpu/64
+	//Normal Mode
+	//Clock is Fcpu/1024
 	//OCR0A interrupt ~every 250ms
 	TCCR1A = 0x00;
-	TCCR1B = 0x08;
+	TCCR1B = 0x00;
 	TCNT1H = 0x00;		//clear the timer
 	TCNT1L = 0x00;
-	TIMSK1 = 0x02;
-	OCR1AH = 0x7A;
-	OCR1AL = 0x12;
+	TIMSK1 = 0x03;
+	OCR1AH = 0x07;
+	OCR1AL = 0xA1;
 	
 	//Enable interrupts globally
 	sei();
@@ -197,7 +203,15 @@ void DisableButtons(void)
 	return;
 }
 
-
+void StartDebounceTimer(void)
+{
+	ButtonInputTimeoutCount = 0;
+	TCCR1B &= 0xF8;		//Stop the timer (if it is running)
+	TCNT1H = 0x00;		//clear the timer
+	TCNT1L = 0x00;
+	TCCR1B |= 0x05;		//Start timer 1 for debouncing
+	return;
+}
 
 void GetTime( TimeAndDate *TimeToReturn )
 {
@@ -409,22 +423,31 @@ uint8_t IsLeapYear(uint16_t TheYear)
 ISR(INT0_vect)
 {
 	DisableButtons();
+	StartDebounceTimer();
+	
+	lcd_clrscr();
+	lcd_puts("Left\n");
 	printf_P(PSTR("Left\n"));
-	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
 }
 
 ISR(INT1_vect)
 {
 	DisableButtons();
+	StartDebounceTimer();
+	
+	lcd_clrscr();
+	lcd_puts("Up\n");
 	printf_P(PSTR("Up\n"));
-	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
 }
 
 ISR(INT5_vect)
 {
 	DisableButtons();
+	StartDebounceTimer();
+	
+	lcd_clrscr();
+	lcd_puts("Center\n");
 	printf_P(PSTR("Center\n"));
-	TCCR1B |= 0x03;		//Enable timer 1 for debouncing
 }
 
 ISR(PCINT1_vect)
@@ -432,14 +455,20 @@ ISR(PCINT1_vect)
 	if((PINC & 0x04) == 0x00)
 	{
 		DisableButtons();
+		StartDebounceTimer();
+		
+		lcd_clrscr();
+		lcd_puts("Down\n");
 		printf_P(PSTR("Down\n"));
-		TCCR1B |= 0x03;		//Enable timer 1 for debouncing
 	}
 	else if((PIND & 0x20) == 0x00)
 	{
 		DisableButtons();
+		StartDebounceTimer();
+		
+		lcd_clrscr();
+		lcd_puts("Right\n");
 		printf_P(PSTR("Right\n"));
-		TCCR1B |= 0x03;		//Enable timer 1 for debouncing
 	}
 }
 
@@ -448,10 +477,24 @@ ISR(PCINT1_vect)
 //This interrupt will trigger 250ms later, and re-enable the buttons
 ISR(TIMER1_COMPA_vect)
 {
-	TCCR1B &= 0xF8;		//Disable timer 1
 	EnableButtons();
 }
 
+ISR(TIMER1_OVF_vect)
+{
+	if(ButtonInputTimeoutCount > BUTTON_DELAY_COUNT)
+	{
+		TCCR1B &= 0xF8;		//Disable timer 1
+		//Switch LCD back to idle state
+		lcd_clrscr();
+		lcd_puts("Idle\n");
+		ButtonInputTimeoutCount = 0;
+	}
+	else
+	{
+		ButtonInputTimeoutCount++;
+	}
+}
 
 //Timer interrupt 0 for basic timing stuff
 ISR(TIMER0_COMPA_vect)
