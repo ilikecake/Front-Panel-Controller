@@ -56,6 +56,7 @@
 		#include "commands.h"
 		#include "dfu_jump.h"
 		#include "lcd.h"
+		#include "MicroMenu.h"
 		
 		//Board includes
 		#include "Board/Hardware.h"
@@ -75,6 +76,8 @@
 
 		extern USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface;
 		extern uint8_t DataRecoderActive;
+		
+		extern FILE LCDStream;
 
 	/* Function Prototypes: */
 		//void SetupHardware(void);

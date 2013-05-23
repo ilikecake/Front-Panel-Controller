@@ -71,6 +71,9 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
  */
 static FILE USBSerialStream;
 
+int LCD_PutChar(char c, FILE *inFile);
+FILE LCDStream;
+
 //If this is set to 1, the device takes date in the main loop.
 uint8_t DataRecoderActive;
 
@@ -82,11 +85,16 @@ int main(void)
 	HardwareInit();
 	
 	/* put string to display (line 1) with linefeed */
-	lcd_puts("Initalized\n");
+	
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
 	stdout = &USBSerialStream;
+	
+	fdev_setup_stream(&LCDStream, LCD_PutChar, NULL, _FDEV_SETUP_WRITE);
+	
+	fprintf(&LCDStream, "Initalized\n");
+	//fprintf(&LCDStream, "blarg");
 
 	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 
@@ -124,3 +132,9 @@ void EVENT_USB_Device_ControlRequest(void)
 	CDC_Device_ProcessControlRequest(&VirtualSerial_CDC_Interface);
 }
 
+//Wrapper function for use with FDEV_SETUP_STREAM
+int LCD_PutChar(char c, FILE *inFile)
+{
+	lcd_putc(c);
+	return 0;
+}

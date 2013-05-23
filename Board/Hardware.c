@@ -24,6 +24,7 @@
 */
 
 #include "main.h"
+#include "MicroMenu.h"
 
 #define HARDWARE_TIMER_0_TOP_VALUE	124
 
@@ -40,6 +41,55 @@ TimeAndDate TheTime;
 volatile uint16_t ElapsedMS;
 
 volatile uint8_t ButtonInputTimeoutCount;
+
+
+////////////////////////////////////
+
+/** Example menu item specific enter callback function, run when the associated menu item is entered. */
+/*static void Level1Item1_Enter(void)
+{
+	lcd_puts("ENTER");
+}*/
+
+/** Example menu item specific select callback function, run when the associated menu item is selected. */
+/*static void Level1Item1_Select(void)
+{
+	lcd_puts("SELECT");
+}*/
+
+/** Generic function to write the text of a menu.
+ *
+ *  \param[in] Text   Text of the selected menu to write, in \ref MENU_ITEM_STORAGE memory space
+ */
+/*static void Generic_Write(const char* Text)
+{
+	if (Text)
+		lcd_puts_p(Text);
+}
+
+MENU_ITEM(Menu_1, Menu_2, Menu_3, NULL_MENU, Menu_1_1,  NULL, NULL, "1");
+MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL, NULL, "2");
+MENU_ITEM(Menu_3, Menu_1, Menu_2, NULL_MENU, NULL_MENU, NULL, NULL, "3");
+
+MENU_ITEM(Menu_1_1, Menu_1_2, Menu_1_2, NULL_MENU, NULL_MENU, NULL, NULL, "1.1");
+MENU_ITEM(Menu_1_2, Menu_1_1, Menu_1_1, NULL_MENU, NULL_MENU, NULL, NULL, "1.2");*/
+
+///////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void HardwareInit( void )
 {
@@ -100,9 +150,9 @@ void HardwareInit( void )
 	//PORT B:
 	//	0: Dataflash CS line			(Out, high)
 	//	4: Pressure sensor CS line		(Out, high)
-	//	6: Backlight control			(Out, low)
+	//	6: Backlight control			(Out, high)
 	DDRB	= (1<<6);
-	PORTB	= 0x00;
+	PORTB	= (1<<6);
 	
 	//PORT C:
 	//	4: Config line 1			(Input, pullup)
@@ -126,6 +176,10 @@ void HardwareInit( void )
 	lcd_clrscr();
 	
 	EnableButtons();
+	
+	/* Set up the default menu text write callback, and navigate to an absolute menu item entry. */
+	//Menu_SetGenericWriteCallback(Generic_Write);
+	//Menu_Navigate(&Menu_1);
 	
 	return;
 }
@@ -419,15 +473,15 @@ uint8_t IsLeapYear(uint16_t TheYear)
 
 
 
-
 ISR(INT0_vect)
 {
 	DisableButtons();
 	StartDebounceTimer();
 	
-	lcd_clrscr();
-	lcd_puts("Left\n");
+	//lcd_clrscr();
+	//lcd_puts("Left\n");
 	printf_P(PSTR("Left\n"));
+	//Menu_Navigate(MENU_PARENT);
 }
 
 ISR(INT1_vect)
@@ -435,9 +489,10 @@ ISR(INT1_vect)
 	DisableButtons();
 	StartDebounceTimer();
 	
-	lcd_clrscr();
-	lcd_puts("Up\n");
+	//lcd_clrscr();
+	//lcd_puts("Up\n");
 	printf_P(PSTR("Up\n"));
+	//Menu_Navigate(MENU_PREVIOUS);
 }
 
 ISR(INT5_vect)
@@ -445,9 +500,10 @@ ISR(INT5_vect)
 	DisableButtons();
 	StartDebounceTimer();
 	
-	lcd_clrscr();
-	lcd_puts("Center\n");
+	//lcd_clrscr();
+	//lcd_puts("Center\n");
 	printf_P(PSTR("Center\n"));
+	//Menu_EnterCurrentItem();
 }
 
 ISR(PCINT1_vect)
@@ -457,18 +513,20 @@ ISR(PCINT1_vect)
 		DisableButtons();
 		StartDebounceTimer();
 		
-		lcd_clrscr();
-		lcd_puts("Down\n");
+		//lcd_clrscr();
+		//lcd_puts("Down\n");
 		printf_P(PSTR("Down\n"));
+		//Menu_Navigate(MENU_NEXT);
 	}
 	else if((PIND & 0x20) == 0x00)
 	{
 		DisableButtons();
 		StartDebounceTimer();
 		
-		lcd_clrscr();
-		lcd_puts("Right\n");
+		//lcd_clrscr();
+		//lcd_puts("Right\n");
 		printf_P(PSTR("Right\n"));
+		//Menu_Navigate(MENU_CHILD);
 	}
 }
 
@@ -564,6 +622,14 @@ ISR(TIMER0_COMPA_vect)
 				}
 			}
 		}
+	//put time on the lcd screen
+	lcd_gotoxy(0, 1);
+	//fprintf(&LCDStream, "a");
+	//printf("a");
+	fprintf(&LCDStream, "%02u:%02u:%02u\n", TheTime.hour, TheTime.min, TheTime.sec);
+	
+	
+	
 	}
 }
 
