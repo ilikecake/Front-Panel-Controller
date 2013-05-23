@@ -70,9 +70,9 @@ const char _F6_HELPTEXT[] PROGMEM 		= "lcdwrite <data>";
 
 //Get a set of data from the devices
 static int _F8_Handler (void);
-const char _F8_NAME[] PROGMEM 			= "data";
-const char _F8_DESCRIPTION[] PROGMEM 	= "Get a data set";
-const char _F8_HELPTEXT[] PROGMEM 		= "'data' has no parameters";
+const char _F8_NAME[] PROGMEM 			= "bkl";
+const char _F8_DESCRIPTION[] PROGMEM 	= "Turn the backlight on/off";
+const char _F8_HELPTEXT[] PROGMEM 		= "bkl <state>";
 
 //Read a register from the memory
 static int _F9_Handler (void);
@@ -107,7 +107,7 @@ const CommandListItem AppCommandList[] PROGMEM =
 	{ _F4_NAME, 	7,  7,	_F4_Handler,	_F4_DESCRIPTION,	_F4_HELPTEXT	},		//settime
 	{ _F5_NAME, 	0,  0,	_F5_Handler,	_F5_DESCRIPTION,	_F5_HELPTEXT	},		//gettime
 	{ _F6_NAME, 	1,  1,	_F6_Handler,	_F6_DESCRIPTION,	_F6_HELPTEXT	},		//lcdwrite	
-	{ _F8_NAME,		0,  0,	_F8_Handler,	_F8_DESCRIPTION,	_F8_HELPTEXT	},		//data
+	{ _F8_NAME,		1,  1,	_F8_Handler,	_F8_DESCRIPTION,	_F8_HELPTEXT	},		//bkl
 	{ _F9_NAME,		1,  3,	_F9_Handler,	_F9_DESCRIPTION,	_F9_HELPTEXT	},		//memread
 	{ _F10_NAME,	0,  0,	_F10_Handler,	_F10_DESCRIPTION,	_F10_HELPTEXT	},		//pres
 	{ _F11_NAME,	1,  2,	_F11_Handler,	_F11_DESCRIPTION,	_F11_HELPTEXT	},		//rh
@@ -211,9 +211,16 @@ static int _F6_Handler (void)
 //Get a set of data from the devices
 static int _F8_Handler (void)
 {
-	uint8_t DataSet[18];
-	uint8_t i;
+	uint8_t NewState = argAsInt(1);
 	
+	if(NewState == 1)
+	{
+		PORTB |= (1<<6);
+	}
+	else
+	{
+		PORTB &= ~(1<<6);
+	}
 	
 	/*GetDataSet(DataSet);
 	

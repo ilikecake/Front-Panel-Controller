@@ -100,9 +100,9 @@ void HardwareInit( void )
 	//PORT B:
 	//	0: Dataflash CS line			(Out, high)
 	//	4: Pressure sensor CS line		(Out, high)
-	//	6: Pressure sensor sleep line	(Out, low)
-	//DDRB	= 1 | (1<<4) | (1<<6);
-	//PORTB	= 1 | (1<<4);
+	//	6: Backlight control			(Out, low)
+	DDRB	= (1<<6);
+	PORTB	= 0x00;
 	
 	//PORT C:
 	//	4: Config line 1			(Input, pullup)
