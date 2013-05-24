@@ -40,44 +40,55 @@ volatile uint8_t TimerRunning;
 TimeAndDate TheTime;
 volatile uint16_t ElapsedMS;
 
+volatile uint8_t OutputTimeToLCD;
+
 volatile uint8_t ButtonInputTimeoutCount;
+
+
+
+
+
 
 
 ////////////////////////////////////
 
 /** Example menu item specific enter callback function, run when the associated menu item is entered. */
-/*static void Level1Item1_Enter(void)
+static void Level1Item1_Enter(void)
 {
 	lcd_puts("ENTER");
-}*/
+}
 
 /** Example menu item specific select callback function, run when the associated menu item is selected. */
-/*static void Level1Item1_Select(void)
+static void Level1Item1_Select(void)
 {
 	lcd_puts("SELECT");
-}*/
+}
 
 /** Generic function to write the text of a menu.
  *
  *  \param[in] Text   Text of the selected menu to write, in \ref MENU_ITEM_STORAGE memory space
  */
-/*static void Generic_Write(const char* Text)
+static void Generic_Write(const char* Text)
 {
 	if (Text)
+	{
+		lcd_clrscr();
 		lcd_puts_p(Text);
+	}
 }
 
-MENU_ITEM(Menu_1, Menu_2, Menu_3, NULL_MENU, Menu_1_1,  NULL, NULL, "1");
-MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL, NULL, "2");
-MENU_ITEM(Menu_3, Menu_1, Menu_2, NULL_MENU, NULL_MENU, NULL, NULL, "3");
+//MENU_ITEM(Name, Next, Previous, Parent, Child, SelectFunc, EnterFunc, Text)
+MENU_ITEM(Menu_1, Menu_2, Menu_3, NULL_MENU, Menu_1_1,  NULL, NULL, "Menu\nItem 1");
+MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL, NULL, "Menu\nItem 2");
+MENU_ITEM(Menu_3, Menu_1, Menu_2, NULL_MENU, NULL_MENU, NULL, Jump_To_Bootloader, "Menu\nDFU Mode");
 
-MENU_ITEM(Menu_1_1, Menu_1_2, Menu_1_2, NULL_MENU, NULL_MENU, NULL, NULL, "1.1");
-MENU_ITEM(Menu_1_2, Menu_1_1, Menu_1_1, NULL_MENU, NULL_MENU, NULL, NULL, "1.2");*/
+MENU_ITEM(Menu_1_1, Menu_1_2, Menu_1_2, Menu_1, NULL_MENU, NULL, NULL, "1.1");
+MENU_ITEM(Menu_1_2, Menu_1_1, Menu_1_1, Menu_1, NULL_MENU, NULL, NULL, "Jon is funny\n  looking!");
 
 ///////////////////////////////////////////
 
 
-
+void HandleButtonPress(uint8_t Button);
 
 
 
@@ -105,6 +116,7 @@ void HardwareInit( void )
 	TimerRunning = 0;
 	
 	ButtonInputTimeoutCount = 0;
+	OutputTimeToLCD = 0;
 	
 	//Disable watchdog if enabled by bootloader/fuses
 	MCUSR &= ~(1 << WDRF);
@@ -178,8 +190,10 @@ void HardwareInit( void )
 	EnableButtons();
 	
 	/* Set up the default menu text write callback, and navigate to an absolute menu item entry. */
-	//Menu_SetGenericWriteCallback(Generic_Write);
+	Menu_SetGenericWriteCallback(Generic_Write);
 	//Menu_Navigate(&Menu_1);
+	
+	OutputTimeToLCD = 1;
 	
 	return;
 }
@@ -471,62 +485,162 @@ uint8_t IsLeapYear(uint16_t TheYear)
 	return 0;
 }
 
+/*Button:
+ * 1 - left
+ * 2 - right
+ * 3 - up
+ * 4 - down
+ * 5 - center
+ */
+void HandleButtonPress(uint8_t Button)
+{
+	DisableButtons();
+	StartDebounceTimer();
+	
+	if(OutputTimeToLCD == 1)
+	{
+		OutputTimeToLCD = 0;
+		lcd_clrscr();
+		Menu_Navigate(&Menu_1);
+	}
+	else
+	{
+		if(Button == 1)
+		{
+			Menu_Navigate(MENU_PARENT);
+		}
+		else if(Button == 2)
+		{
+			Menu_Navigate(MENU_CHILD);
+		}
+		else if(Button == 3)
+		{
+			Menu_Navigate(MENU_PREVIOUS);
+		}	
+		else if(Button == 4)
+		{
+			Menu_Navigate(MENU_NEXT);
+		}
+		else if(Button == 5)
+		{
+			Menu_EnterCurrentItem();
+		}
+	}
+	
+	return;
+}
 
 
 ISR(INT0_vect)
 {
-	DisableButtons();
-	StartDebounceTimer();
-	
-	//lcd_clrscr();
-	//lcd_puts("Left\n");
-	printf_P(PSTR("Left\n"));
-	//Menu_Navigate(MENU_PARENT);
+	HandleButtonPress(1);	//Left
+
+	/*
+	if(OutputTimeToLCD == 1)
+	{
+		OutputTimeToLCD = 0;
+		lcd_clrscr();
+		Menu_Navigate(&Menu_1);
+	}
+	else
+	{
+		DisableButtons();
+		StartDebounceTimer();
+		
+		//lcd_clrscr();
+		//lcd_puts("Left\n");
+		printf_P(PSTR("Left\n"));
+		Menu_Navigate(MENU_PARENT);
+	}*/
 }
 
 ISR(INT1_vect)
 {
-	DisableButtons();
-	StartDebounceTimer();
-	
-	//lcd_clrscr();
-	//lcd_puts("Up\n");
-	printf_P(PSTR("Up\n"));
-	//Menu_Navigate(MENU_PREVIOUS);
+	HandleButtonPress(3);	//Up
+	/*
+	if(OutputTimeToLCD == 1)
+	{
+		OutputTimeToLCD = 0;
+		lcd_clrscr();
+		Menu_Navigate(&Menu_1);
+	}
+	else
+	{
+		DisableButtons();
+		StartDebounceTimer();
+		
+		//lcd_clrscr();
+		//lcd_puts("Up\n");
+		printf_P(PSTR("Up\n"));
+		Menu_Navigate(MENU_PREVIOUS);
+	}*/
 }
 
 ISR(INT5_vect)
 {
-	DisableButtons();
-	StartDebounceTimer();
-	
-	//lcd_clrscr();
-	//lcd_puts("Center\n");
-	printf_P(PSTR("Center\n"));
-	//Menu_EnterCurrentItem();
+	HandleButtonPress(5);	//Center
+	/*
+	if(OutputTimeToLCD == 1)
+	{
+		OutputTimeToLCD = 0;
+		lcd_clrscr();
+		Menu_Navigate(&Menu_1);
+	}
+	else
+	{
+		DisableButtons();
+		StartDebounceTimer();
+		
+		//lcd_clrscr();
+		//lcd_puts("Center\n");
+		printf_P(PSTR("Center\n"));
+		Menu_EnterCurrentItem();
+	}*/
 }
 
 ISR(PCINT1_vect)
 {
 	if((PINC & 0x04) == 0x00)
 	{
-		DisableButtons();
-		StartDebounceTimer();
-		
-		//lcd_clrscr();
-		//lcd_puts("Down\n");
-		printf_P(PSTR("Down\n"));
-		//Menu_Navigate(MENU_NEXT);
+		HandleButtonPress(4);	//Down
+		/*
+		if(OutputTimeToLCD == 1)
+		{
+			OutputTimeToLCD = 0;
+			lcd_clrscr();
+			Menu_Navigate(&Menu_1);
+		}
+		else
+		{
+			DisableButtons();
+			StartDebounceTimer();
+			
+			//lcd_clrscr();
+			//lcd_puts("Down\n");
+			printf_P(PSTR("Down\n"));
+			Menu_Navigate(MENU_NEXT);
+		}*/
 	}
 	else if((PIND & 0x20) == 0x00)
 	{
-		DisableButtons();
-		StartDebounceTimer();
-		
-		//lcd_clrscr();
-		//lcd_puts("Right\n");
-		printf_P(PSTR("Right\n"));
-		//Menu_Navigate(MENU_CHILD);
+		HandleButtonPress(2);	//Right
+		/*
+		if(OutputTimeToLCD == 1)
+		{
+			OutputTimeToLCD = 0;
+			lcd_clrscr();
+			Menu_Navigate(&Menu_1);
+		}
+		else
+		{
+			DisableButtons();
+			StartDebounceTimer();
+			
+			//lcd_clrscr();
+			//lcd_puts("Right\n");
+			printf_P(PSTR("Right\n"));
+			Menu_Navigate(MENU_CHILD);
+		}*/
 	}
 }
 
@@ -547,6 +661,7 @@ ISR(TIMER1_OVF_vect)
 		lcd_clrscr();
 		lcd_puts("Idle\n");
 		ButtonInputTimeoutCount = 0;
+		OutputTimeToLCD = 1;
 	}
 	else
 	{
@@ -623,11 +738,18 @@ ISR(TIMER0_COMPA_vect)
 			}
 		}
 	//put time on the lcd screen
-	lcd_gotoxy(0, 1);
-	//fprintf(&LCDStream, "a");
-	//printf("a");
-	fprintf(&LCDStream, "%02u:%02u:%02u\n", TheTime.hour, TheTime.min, TheTime.sec);
-	
+	if(OutputTimeToLCD == 1)
+	{
+		lcd_gotoxy(0, 1);
+		if(TheTime.hour > 12)
+		{
+			fprintf(&LCDStream, "%02u:%02u:%02u PM\n", TheTime.hour-12, TheTime.min, TheTime.sec);
+		}
+		else
+		{
+			fprintf(&LCDStream, "%02u:%02u:%02u AM\n", TheTime.hour, TheTime.min, TheTime.sec);
+		}
+	}
 	
 	
 	}

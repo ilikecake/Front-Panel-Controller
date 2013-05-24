@@ -48,6 +48,26 @@ void StopTimer(void);
 
 void LED(uint8_t LEDState);
 
+
+//LCD Functions
+
+//Returns the menu status
+uint8_t LCDMenuStatus(void);
+
+//Go to idle state
+uint8_t LCDGotoIdle(void);
+
+//Start timer to go to idle state
+uint8_t LCDStartTimeout(void);
+
+//Stop timer to go to idle state
+uint8_t LCDStopTimeout(void);
+
+
+
+
+
+
 //Returns 1 if the year is a leap year
 uint8_t IsLeapYear(uint16_t TheYear);
 

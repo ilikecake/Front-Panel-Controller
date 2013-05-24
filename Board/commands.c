@@ -224,7 +224,8 @@ static int _F8_Handler (void)
 static int _F9_Handler (void)
 {
 	uint8_t CmdState = argAsInt(1);
-
+	TimeAndDate CurrentTime;
+	
 
 	switch(CmdState)
 	{
@@ -241,7 +242,12 @@ static int _F9_Handler (void)
 			fprintf(&LCDStream, "test2");
 			break;
 	
-	
+		case 4:
+			GetTime(&CurrentTime);
+			lcd_init(LCD_DISP_ON_CURSOR);
+			fprintf(&LCDStream, "Set Time\n %02u:%02u:%02u\n", CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
+			lcd_gotoxy(2, 1);
+			break;
 	
 	}
 
