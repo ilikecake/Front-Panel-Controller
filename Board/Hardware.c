@@ -705,7 +705,7 @@ ISR(TIMER0_COMPA_vect)
 				TheTime.hour += 1;
 				if(TheTime.hour > 24)
 				{
-					TheTime.hour = 0;
+					TheTime.hour = 1;
 					TheTime.day += 1;
 					
 					//Determine the number of days in the month.
