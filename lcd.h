@@ -212,6 +212,16 @@ extern void lcd_home(void);
 */
 extern void lcd_gotoxy(uint8_t x, uint8_t y);
 
+
+/**
+ @brief    Set cursor to specified address
+ 
+ @param    addr the address to go to
+ @return   none
+*/
+extern void lcd_gotoaddress(uint8_t addr);
+
+
 /**
  @brief    Return the current address counter
  
@@ -219,6 +229,7 @@ extern void lcd_gotoxy(uint8_t x, uint8_t y);
  @return   Address counter
 */
 extern uint8_t lcd_getcurrentaddress(void);
+
 
 /**
  @brief    Read character at a specified position
@@ -228,6 +239,16 @@ extern uint8_t lcd_getcurrentaddress(void);
  @return   Character code
 */
 extern uint8_t lcd_getxy(uint8_t x, uint8_t y);
+
+
+/**
+ @brief    Read character at a specified address
+ 
+ @param    addr address to read
+ @return   Character code
+*/
+extern uint8_t lcd_getcharacterataddress(uint8_t addr);
+
 
 /**
  @brief    Display character at current cursor position
