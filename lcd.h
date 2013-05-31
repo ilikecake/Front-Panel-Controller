@@ -212,6 +212,22 @@ extern void lcd_home(void);
 */
 extern void lcd_gotoxy(uint8_t x, uint8_t y);
 
+/**
+ @brief    Return the current address counter
+ 
+ @param    void
+ @return   Address counter
+*/
+extern uint8_t lcd_getcurrentaddress(void);
+
+/**
+ @brief    Read character at a specified position
+ 
+ @param    x horizontal position\n (0: left most position)
+ @param    y vertical position\n   (0: first line)
+ @return   Character code
+*/
+extern uint8_t lcd_getxy(uint8_t x, uint8_t y);
 
 /**
  @brief    Display character at current cursor position
