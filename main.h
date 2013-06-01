@@ -33,8 +33,8 @@
  *  Header file for main.c.
  */
 
-#ifndef _ENV_SENSOR_H_
-#define _ENV_SENSOR_H_
+#ifndef _FP_CONTROLLER_H_
+#define _FP_CONTROLLER_H_
 
 	/* Includes: */
 		#include <avr/io.h>
@@ -57,6 +57,8 @@
 		#include "dfu_jump.h"
 		#include "lcd.h"
 		#include "MicroMenu.h"
+		//#include "LCD_Menu.h"
+
 		
 		//Board includes
 		#include "Board/Hardware.h"

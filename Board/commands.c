@@ -225,7 +225,7 @@ static int _F9_Handler (void)
 {
 	uint8_t CmdState = argAsInt(1);
 	TimeAndDate CurrentTime;
-	
+	uint8_t i;
 
 	switch(CmdState)
 	{
@@ -247,6 +247,46 @@ static int _F9_Handler (void)
 			lcd_init(LCD_DISP_ON_CURSOR);
 			fprintf(&LCDStream, "Set Time\n %02u:%02u:%02u\n", CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
 			lcd_gotoxy(2, 1);
+			break;
+			
+		case 5:
+			lcd_gotoxy(0, 1);
+			fprintf(&LCDStream, "abcdeABCDE");
+		
+			for(i=1;i<10;i++)
+			{
+				printf("DDRAM(%u): 0x%02X\n", i, lcd_getxy(i, 1));
+			}
+			
+			/*
+			fprintf(&LCDStream, "b");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "c");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "d");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "e");
+			printf("add: %u\n", lcd_getxy());
+			
+			lcd_gotoxy(0, 1);
+			fprintf(&LCDStream, "a");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "b");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "c");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "d");
+			printf("add: %u\n", lcd_getxy());
+			
+			fprintf(&LCDStream, "e");
+			printf("add: %u\n", lcd_getxy());*/
+			
 			break;
 	
 	}

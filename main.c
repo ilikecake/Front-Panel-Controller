@@ -101,6 +101,7 @@ int main(void)
 	for (;;)
 	{
 		RunCommand();
+		HandleButtonPress();
 	}
 }
 

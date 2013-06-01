@@ -55,7 +55,7 @@ void LED(uint8_t LEDState);
 uint8_t LCDMenuStatus(void);
 
 //Go to idle state
-uint8_t LCDGotoIdle(void);
+//uint8_t LCDGotoIdle(void);
 
 //Start timer to go to idle state
 uint8_t LCDStartTimeout(void);
@@ -63,7 +63,7 @@ uint8_t LCDStartTimeout(void);
 //Stop timer to go to idle state
 uint8_t LCDStopTimeout(void);
 
-
+void HandleButtonPress(void);
 
 
 
@@ -71,7 +71,7 @@ uint8_t LCDStopTimeout(void);
 //Returns 1 if the year is a leap year
 uint8_t IsLeapYear(uint16_t TheYear);
 
-//Returns the number of days in the month. Will always return 28 for february, aditional checks will be needed to correct for leap years.
+//Returns the number of days in the month. Will always return 28 for February, aditional checks will be needed to correct for leap years.
 uint8_t DaysPerMonth(uint8_t MonthNumber);
 
 #endif

@@ -24,11 +24,8 @@
 */
 
 #include "main.h"
-#include "MicroMenu.h"
 
 #define HARDWARE_TIMER_0_TOP_VALUE	124
-
-#define BUTTON_DELAY_COUNT	2
 
 //Global variables needed for the timer
 TimeAndDate TimerStartTime;
@@ -40,17 +37,61 @@ volatile uint8_t TimerRunning;
 TimeAndDate TheTime;
 volatile uint16_t ElapsedMS;
 
-volatile uint8_t OutputTimeToLCD;
+//volatile uint8_t OutputTimeToLCD;
 
 volatile uint8_t ButtonInputTimeoutCount;
 
 
+//Stuff for the LCD menu
+//TODO: this should probably get it's own file or somthing.
+
+//Sets the timeout on the menu. After ~ 8*(1+n) seconds of no button presses, the menu will revert to the idle state
+//TODO: fix this so that 0=no menu timout, 1=8s, 2=16s, etc...
+#define LCD_BUTTON_TIMEOUT			2
+
+#define LCD_MENU_STATUS_IDLE		0
+#define LCD_MENU_STATUS_MAIN_MENU	1
+#define LCD_MENU_STATUS_TIME		2
+
+#define LCD_MENU_BUTTON_NONE		0
+#define LCD_MENU_BUTTON_UP			1
+#define LCD_MENU_BUTTON_DOWN		2
+#define LCD_MENU_BUTTON_LEFT		3
+#define LCD_MENU_BUTTON_RIGHT		4
+#define LCD_MENU_BUTTON_CENTER		5
+
+//Global variables
+uint8_t LCDMenuState;		//Indicated the state of the LCD
+uint8_t LCDButtonState;		//Indicated if a button is pressed
+
+//uint8_t MinOffset;
+//uint8_t HourOffset;
+//uint8_t SecOffset;
 
 
+/** Run when the get time function is entered. */
+static void GetTime_Enter(void)
+{
+	TimeAndDate CurrentTime;
+	
+	//HourOffset = 0;
+	//MinOffset = 0;
+	//SecOffset = 0;
+	
+	//Set up the LCD to have a blinking cursor
+	lcd_init(LCD_DISP_ON_CURSOR_BLINK);
+	lcd_clrscr();
+	
+	GetTime(&CurrentTime);
+
+	LCDMenuState = LCD_MENU_STATUS_TIME;
+	fprintf(&LCDStream, "Set Time:\n%02u:%02u:%02u", CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
+	lcd_gotoxy(0, 1);
+	
+	return;
+}
 
 
-
-////////////////////////////////////
 
 /** Example menu item specific enter callback function, run when the associated menu item is entered. */
 static void Level1Item1_Enter(void)
@@ -77,24 +118,45 @@ static void Generic_Write(const char* Text)
 	}
 }
 
+void LCDMenuButtonPressed(uint8_t Button)
+{
+	if(LCDButtonState == LCD_MENU_BUTTON_NONE)
+	{
+		LCDButtonState = Button;
+	}
+	return;
+}
+
+//void HandleButtonPress(uint8_t Button);
+
+
+
 //MENU_ITEM(Name, Next, Previous, Parent, Child, SelectFunc, EnterFunc, Text)
 MENU_ITEM(Menu_1, Menu_2, Menu_3, NULL_MENU, Menu_1_1,  NULL, NULL, "Menu\nItem 1");
-MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL, NULL, "Menu\nItem 2");
+MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL, GetTime_Enter, "Menu\nSet Time");
 MENU_ITEM(Menu_3, Menu_1, Menu_2, NULL_MENU, NULL_MENU, NULL, Jump_To_Bootloader, "Menu\nDFU Mode");
 
 MENU_ITEM(Menu_1_1, Menu_1_2, Menu_1_2, Menu_1, NULL_MENU, NULL, NULL, "1.1");
 MENU_ITEM(Menu_1_2, Menu_1_1, Menu_1_1, Menu_1, NULL_MENU, NULL, NULL, "Jon is funny\n  looking!");
 
-///////////////////////////////////////////
-
-
-void HandleButtonPress(uint8_t Button);
+/****************************************************************/
 
 
 
 
 
 
+
+
+/*static void SetTime_Enter(void)
+{
+	LCDMenuState = 2;
+	lcd_init(LCD_DISP_ON_CURSOR_BLINK);
+	lcd_clrscr();
+	
+	fprintf(&LCDStream, "Set Time\n%02u:%02u:%02u AM\n", TheTime.hour, TheTime.min, TheTime.sec);
+	lcd_gotoxy(0, 1);
+}*/
 
 
 
@@ -115,8 +177,10 @@ void HardwareInit( void )
 	TheTime.year	= 0;
 	TimerRunning = 0;
 	
+	
 	ButtonInputTimeoutCount = 0;
-	OutputTimeToLCD = 0;
+	LCDMenuState = LCD_MENU_STATUS_IDLE;
+	LCDButtonState = LCD_MENU_BUTTON_NONE;
 	
 	//Disable watchdog if enabled by bootloader/fuses
 	MCUSR &= ~(1 << WDRF);
@@ -193,7 +257,6 @@ void HardwareInit( void )
 	Menu_SetGenericWriteCallback(Generic_Write);
 	//Menu_Navigate(&Menu_1);
 	
-	OutputTimeToLCD = 1;
 	
 	return;
 }
@@ -390,49 +453,7 @@ void StopTimer(void)
 		TimerEndTime.sec = TheTime.sec;
 		TimerEndMS = ElapsedMS;
 		TimerEndRemainder = TCNT0;
-		
-		
-		
 		printf_P(PSTR("Time: %02u sec %04u ms %04u us\n"), TimerEndTime.sec-TimerStartTime.sec, TimerEndMS-TimerStartMS , (HARDWARE_TIMER_0_TOP_VALUE - TimerRemainder) + TimerEndRemainder);
-		
-		
-		
-		
-		
-		
-		
-		//TimerEndMS
-		//ElapsedUS = (HARDWARE_TIMER_0_TOP_VALUE - TimerRemainder) + TimerEndRemainder;
-		//if(ElapsedUS > 1000)
-		//{
-		//	ElapsedUS = ElapsedUS - 1000;
-		//}
-		
-		/*if(TimerEndTime.day != TimerStartTime.day)
-		{
-			TimerEndTime.day = TimerEndTime.day - TimerStartTime.day;
-			TimerEndTime.hour = TimerEndTime.hour + (24 - TimerStartTime.hour);
-			TimerEndTime.min = TimerEndTime.min + (60 - TimerStartTime.min);
-			TimerEndTime.sec = TimerEndTime.sec + (60 - TimerStartTime.sec);
-		}
-		
-		if(
-		
-		
-		
-		
-		
-			if(TimerEndTime.hour = TimerStartTime.hour)
-			{
-				if(TimerEndTime.min = TimerStartTime.min)
-				{
-					if(TimerEndTime.sec = TimerStartTime.sec)
-					{
-					
-					}*/
-		
-		
-		
 		//Reset the timer value
 		TimerRunning = 0;
 	}
@@ -491,156 +512,290 @@ uint8_t IsLeapYear(uint16_t TheYear)
  * 3 - up
  * 4 - down
  * 5 - center
+ TODO: Give this function a better name
  */
-void HandleButtonPress(uint8_t Button)
+void HandleButtonPress(void)
 {
-	DisableButtons();
-	StartDebounceTimer();
+	uint8_t temp1;
+	int8_t temp2;
+	uint8_t temp3;
 	
-	if(OutputTimeToLCD == 1)
-	{
-		OutputTimeToLCD = 0;
-		lcd_clrscr();
-		Menu_Navigate(&Menu_1);
-	}
-	else
-	{
-		if(Button == 1)
-		{
-			Menu_Navigate(MENU_PARENT);
-		}
-		else if(Button == 2)
-		{
-			Menu_Navigate(MENU_CHILD);
-		}
-		else if(Button == 3)
-		{
-			Menu_Navigate(MENU_PREVIOUS);
-		}	
-		else if(Button == 4)
-		{
-			Menu_Navigate(MENU_NEXT);
-		}
-		else if(Button == 5)
-		{
-			Menu_EnterCurrentItem();
-		}
-	}
+	TimeAndDate TimeToSet;
 	
+	//fprintf(&LCDStream, "Set Time:\n%02u:%02u:%02u", CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
+	
+	
+	
+	
+	
+	
+	if(LCDButtonState != LCD_MENU_BUTTON_NONE)
+	{
+	//uint8_t LCD_Pos;
+	//DisableButtons();
+	//StartDebounceTimer();
+	
+		if(LCDMenuState == LCD_MENU_STATUS_IDLE)
+		{
+			LCDMenuState = LCD_MENU_STATUS_MAIN_MENU;
+			lcd_clrscr();
+			Menu_Navigate(&Menu_1);
+		}
+		else if(LCDMenuState == LCD_MENU_STATUS_MAIN_MENU)
+		{
+			if(LCDButtonState == LCD_MENU_BUTTON_LEFT)
+			{
+				Menu_Navigate(MENU_PARENT);
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_RIGHT)
+			{
+				Menu_Navigate(MENU_CHILD);
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_UP)
+			{
+				Menu_Navigate(MENU_PREVIOUS);
+			}	
+			else if(LCDButtonState == LCD_MENU_BUTTON_DOWN)
+			{
+				Menu_Navigate(MENU_NEXT);
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_CENTER)
+			{
+				Menu_EnterCurrentItem();
+			}
+		}
+		else if(LCDMenuState == LCD_MENU_STATUS_TIME)
+		{
+			//Read the currently selected address
+			temp1 = lcd_getcurrentaddress();
+			
+			//Read the current value of the selected section
+			if((temp1 == 0x42) || (temp1 == 0x45))
+			{
+				temp2 = 0xFF;
+			}
+			else if(temp1 < 0x42)	//Hours
+			{
+				temp2 = (lcd_getcharacterataddress(0x40)-0x30)*10 + (lcd_getcharacterataddress(0x41)-0x30);
+			}
+			else if(temp1 < 0x45)	//Minutes
+			{
+				temp2 = (lcd_getcharacterataddress(0x43)-0x30)*10 + (lcd_getcharacterataddress(0x44)-0x30);
+			}
+			else					//Seconds
+			{
+				temp2 = (lcd_getcharacterataddress(0x46)-0x30)*10 + (lcd_getcharacterataddress(0x47)-0x30);
+			}
+			lcd_gotoaddress(temp1);
+			printf("addr is 0x%02X value is %u\n", temp1, temp2);
+			
+			if(LCDButtonState == LCD_MENU_BUTTON_LEFT)
+			{
+				//temp1 = lcd_getcurrentaddress();
+				if(temp1 > 0x40)
+				{
+					lcd_gotoxy(temp1-0x40-1, 1);
+					temp1--;
+				}
+				if((temp1 == 0x42) || (temp1 == 0x45))
+				{
+					lcd_gotoxy(temp1-0x40-1, 1);
+				}
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_RIGHT)
+			{
+				//temp1 = lcd_getcurrentaddress();
+				
+				if(temp1 < 0x47)
+				{
+					lcd_gotoxy(temp1-0x40+1, 1);
+					temp1++;
+				}
+				if((temp1 == 0x42) || (temp1 == 0x45))
+				{
+					lcd_gotoxy(temp1-0x40+1, 1);
+				}
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_UP)
+			{
+				if(temp1 == 0x40)		//good
+				{
+					temp2 += 10;
+					if(temp2 > 23)
+					{
+						temp2 = temp2 - 20;
+						if(temp2 >= 10)
+						{
+							temp2 = temp2 - 10;
+						}
+					}
+				}
+				else if(temp1 == 0x41)	//good
+				{
+					temp2 += 1;
+					if(temp2 > 23)
+					{
+						temp2 = temp2 - 24;
+					}
+				}
+				else if((temp1 == 0x43) || (temp1 == 0x46))
+				{
+					temp2 += 10;
+					if(temp2 > 59)
+					{
+						temp2 = temp2 - 60;
+					}
+				}
+				else if((temp1 == 0x44) || (temp1 == 0x47))
+				{
+					temp2 += 1;
+					if(temp2 > 59)
+					{
+						temp2 = temp2 - 60;
+					}
+				}
+				
+				//temp2 is now the new value
+				printf("Writing %u to addr 0x%02X\n", temp2, temp1);
+				if(temp1 < 0x42)
+				{
+					printf("a\n");
+					lcd_gotoaddress(0x40);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+				else if(temp1 < 0x45)
+				{
+					printf("b\n");
+					lcd_gotoaddress(0x43);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+				else
+				{
+					printf("c\n");
+					lcd_gotoaddress(0x46);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+			}	
+			else if(LCDButtonState == LCD_MENU_BUTTON_DOWN)
+			{
+				if(temp1 == 0x40)
+				{
+					temp2 -= 10;
+					if(temp2 < 0)
+					{
+						temp2 = temp2 + 30;
+						if(temp2 > 23)
+						{
+							temp2 = temp2 - 10;
+						}
+					}
+				}
+				else if(temp1 == 0x41)	//good
+				{
+					temp2 -= 1;
+					if(temp2 < 0)
+					{
+						temp2 = temp2 + 24;
+					}
+				}
+				else if((temp1 == 0x43) || (temp1 == 0x46))
+				{
+					temp2 -= 10;
+					if(temp2 < 0)
+					{
+						temp2 = temp2 + 60;
+					}
+				}
+				else if((temp1 == 0x44) || (temp1 == 0x47))
+				{
+					temp2 -= 1;
+					if(temp2 < 0)
+					{
+						temp2 = temp2 + 60;
+					}
+				}
+				
+				//temp2 is now the new value
+				printf("Writing %u to addr 0x%02X\n", temp2, temp1);
+				if(temp1 < 0x42)
+				{
+					lcd_gotoaddress(0x40);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+				else if(temp1 < 0x45)
+				{
+					lcd_gotoaddress(0x43);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+				else
+				{
+					lcd_gotoaddress(0x46);
+					fprintf(&LCDStream, "%02u", temp2);
+					lcd_gotoaddress(temp1);
+				}
+			}
+			else if(LCDButtonState == LCD_MENU_BUTTON_CENTER)
+			{
+				
+				GetTime(&TimeToSet);
+				TimeToSet.hour = (lcd_getcharacterataddress(0x40)-0x30)*10 + (lcd_getcharacterataddress(0x41)-0x30);
+				TimeToSet.min = (lcd_getcharacterataddress(0x43)-0x30)*10 + (lcd_getcharacterataddress(0x44)-0x30);
+				TimeToSet.sec = (lcd_getcharacterataddress(0x46)-0x30)*10 + (lcd_getcharacterataddress(0x47)-0x30);
+				SetTime(TimeToSet);
+				LCDMenuState = LCD_MENU_STATUS_MAIN_MENU;
+				
+			}
+		}
+	}
+	LCDButtonState = LCD_MENU_BUTTON_NONE;
 	return;
 }
 
 
 ISR(INT0_vect)
 {
-	HandleButtonPress(1);	//Left
-
-	/*
-	if(OutputTimeToLCD == 1)
-	{
-		OutputTimeToLCD = 0;
-		lcd_clrscr();
-		Menu_Navigate(&Menu_1);
-	}
-	else
-	{
-		DisableButtons();
-		StartDebounceTimer();
-		
-		//lcd_clrscr();
-		//lcd_puts("Left\n");
-		printf_P(PSTR("Left\n"));
-		Menu_Navigate(MENU_PARENT);
-	}*/
+	DisableButtons();
+	StartDebounceTimer();
+	LCDMenuButtonPressed(LCD_MENU_BUTTON_LEFT);
+	//HandleButtonPress(LCD_MENU_BUTTON_LEFT);	//Left
 }
 
 ISR(INT1_vect)
 {
-	HandleButtonPress(3);	//Up
-	/*
-	if(OutputTimeToLCD == 1)
-	{
-		OutputTimeToLCD = 0;
-		lcd_clrscr();
-		Menu_Navigate(&Menu_1);
-	}
-	else
-	{
-		DisableButtons();
-		StartDebounceTimer();
-		
-		//lcd_clrscr();
-		//lcd_puts("Up\n");
-		printf_P(PSTR("Up\n"));
-		Menu_Navigate(MENU_PREVIOUS);
-	}*/
+	DisableButtons();
+	StartDebounceTimer();
+	LCDMenuButtonPressed(LCD_MENU_BUTTON_UP);
+	//HandleButtonPress(LCD_MENU_BUTTON_UP);	//Up
 }
 
 ISR(INT5_vect)
 {
-	HandleButtonPress(5);	//Center
-	/*
-	if(OutputTimeToLCD == 1)
-	{
-		OutputTimeToLCD = 0;
-		lcd_clrscr();
-		Menu_Navigate(&Menu_1);
-	}
-	else
-	{
-		DisableButtons();
-		StartDebounceTimer();
-		
-		//lcd_clrscr();
-		//lcd_puts("Center\n");
-		printf_P(PSTR("Center\n"));
-		Menu_EnterCurrentItem();
-	}*/
+	DisableButtons();
+	StartDebounceTimer();
+	LCDMenuButtonPressed(LCD_MENU_BUTTON_CENTER);
+	//HandleButtonPress(LCD_MENU_BUTTON_CENTER);	//Center
 }
 
 ISR(PCINT1_vect)
 {
 	if((PINC & 0x04) == 0x00)
 	{
-		HandleButtonPress(4);	//Down
-		/*
-		if(OutputTimeToLCD == 1)
-		{
-			OutputTimeToLCD = 0;
-			lcd_clrscr();
-			Menu_Navigate(&Menu_1);
-		}
-		else
-		{
-			DisableButtons();
-			StartDebounceTimer();
-			
-			//lcd_clrscr();
-			//lcd_puts("Down\n");
-			printf_P(PSTR("Down\n"));
-			Menu_Navigate(MENU_NEXT);
-		}*/
+		DisableButtons();
+		StartDebounceTimer();
+		LCDMenuButtonPressed(LCD_MENU_BUTTON_DOWN);
+		//HandleButtonPress(LCD_MENU_BUTTON_DOWN);	//Down
 	}
 	else if((PIND & 0x20) == 0x00)
 	{
-		HandleButtonPress(2);	//Right
-		/*
-		if(OutputTimeToLCD == 1)
-		{
-			OutputTimeToLCD = 0;
-			lcd_clrscr();
-			Menu_Navigate(&Menu_1);
-		}
-		else
-		{
-			DisableButtons();
-			StartDebounceTimer();
-			
-			//lcd_clrscr();
-			//lcd_puts("Right\n");
-			printf_P(PSTR("Right\n"));
-			Menu_Navigate(MENU_CHILD);
-		}*/
+		DisableButtons();
+		StartDebounceTimer();
+		LCDMenuButtonPressed(LCD_MENU_BUTTON_RIGHT);
+		//HandleButtonPress(LCD_MENU_BUTTON_RIGHT);	//Right
 	}
 }
 
@@ -654,14 +809,16 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(TIMER1_OVF_vect)
 {
-	if(ButtonInputTimeoutCount > BUTTON_DELAY_COUNT)
+	if(ButtonInputTimeoutCount > LCD_BUTTON_TIMEOUT)
 	{
 		TCCR1B &= 0xF8;		//Disable timer 1
+		
 		//Switch LCD back to idle state
+		lcd_init(LCD_DISP_ON);
 		lcd_clrscr();
 		lcd_puts("Idle\n");
 		ButtonInputTimeoutCount = 0;
-		OutputTimeToLCD = 1;
+		LCDMenuState = 0;
 	}
 	else
 	{
@@ -738,7 +895,7 @@ ISR(TIMER0_COMPA_vect)
 			}
 		}
 	//put time on the lcd screen
-	if(OutputTimeToLCD == 1)
+	if(LCDMenuState == LCD_MENU_STATUS_IDLE)
 	{
 		lcd_gotoxy(0, 1);
 		if(TheTime.hour > 12)
@@ -750,6 +907,12 @@ ISR(TIMER0_COMPA_vect)
 			fprintf(&LCDStream, "%02u:%02u:%02u AM\n", TheTime.hour, TheTime.min, TheTime.sec);
 		}
 	}
+	/*else if (LCDMenuState == LCD_MENU_STATUS_TIME)
+	{
+		lcd_gotoxy(0, 1);
+			
+			fprintf(&LCDStream, "%02u:%02u:%02u\n", TheTime.hour, TheTime.min, TheTime.sec);
+	}*/
 	
 	
 	}
